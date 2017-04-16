@@ -1,8 +1,13 @@
 # esopy
+
+### -- WIP --
 Tools for esoteric languages in python
 
-## Brainfuck
+---
+## Languages
+### Brainfuck
 
  - interpreter
- 
- TODO list [here](https://github.com/TrakJohnson/esopy/projects/1)
+
+---
+TODO list [here](https://github.com/TrakJohnson/esopy/projects/1)
