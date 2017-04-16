@@ -1,0 +1,8 @@
+++++++
+>           THIS IS WHERE THE INDEX IS
++>+<<       INITIAL SETUP (depth;1; 1; 0)
+[>>         OPEN MAIN LOOP
+[->+<]      0; first; 0; second
+<[->+<]     0; 0; first; second
+>>[-<+<+>>] 0; second; third; 0
+<<< -]
