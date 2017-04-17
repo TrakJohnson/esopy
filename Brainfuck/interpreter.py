@@ -27,6 +27,11 @@ class ArgumentConflict(Exception):
         super().__init__(*args)
 
 
+class InvalidCharacter(Exception):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
 class Parser:
     def __init__(self, pointer=0, tape=None, tape_infinite_expansion=False, tape_length=None,
                  allow_other_chars=True, cyclic_cell=False, tape_bit=8):
@@ -108,8 +113,12 @@ class Parser:
         sys.stdout.write(chr(self.tape[self.pointer]))
 
     def run(self, code):
-        """executes code"""
-        code = ''.join([i for i in code if i in self.commands])
+        """execute code"""
+        if self.allow_other_chars:
+            code = ''.join([i for i in code if i in self.commands])
+        else:
+            if any([c not in self.commands for c in code]):
+                raise InvalidCharacter('Invalid character found in code')
         opening_brackets = []
         code_index = 0
         while code_index < len(code):
@@ -127,6 +136,5 @@ class Parser:
             code_index += 1
 
 if __name__ == '__main__':
-    p = Parser()
-    with open('examples\hello_world.b') as f:
-        p.run(f.read())
+    p = Parser(allow_other_chars=False)
+    p.run('ABC')
