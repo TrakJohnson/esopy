@@ -5,9 +5,9 @@ brainf. interpreter in python
     char array[infinitely large size] = {0};
     char *ptr=array;
 
-/----------------------------------\    
-| Bf command || C command          | 
-|----------------------------------|
+/-----------------------------------\    
+|   Bf command |    C command       | 
+|-----------------------------------|
 |      >	   |    ++ptr;          | 
 |      <	   |    --ptr;          |
 |      +	   |    ++*ptr;         |
@@ -16,16 +16,33 @@ brainf. interpreter in python
 |      ,	   |    *ptr=getchar(); |
 |      [	   |    while (*ptr) {  |
 |      ]	   |    }               |
-\---------------------------------/
+\-----------------------------------/
 """
 
 import sys
 
 
+class ArgumentConflict(Exception):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
 class Parser:
-    def __init__(self, pointer=0, tape=None, tape_infinite_expansion=False, allow_other_chars=True):
+    def __init__(self, pointer=0, tape=None, tape_infinite_expansion=False,
+                 tape_length=None, allow_other_chars=True):
+        """
+        Main brainf parser
+        :param pointer: initial pointer position on the tape
+        :param tape: you can pass a custom tape (list with numbers >= 0)
+        :param tape_infinite_expansion: if True, tape will will expand infinitely to the right 
+        :param allow_other_chars: If false, will raise an error if it encounters other chars
+        """
         self.pointer = pointer
         self.infinite_expansion = tape_infinite_expansion
+        if tape_length and tape_infinite_expansion:
+            raise ArgumentConflict("Cannot specify tape length if infinite expansion is enabled")
+        self.tape_length = tape_length if tape_length else 3*(10**4)
+        self.allow_other_chars = allow_other_chars  # TODO: implement that
         self.commands = {
             '>': self.increment_pointer,
             '<': self.decrement_pointer,
@@ -40,12 +57,13 @@ class Parser:
         if tape:
             self.tape = tape
         else:
-            self.tape = [0 for i in range(3*(10**4))]
+            self.tape = [0 for _ in range(self.tape_length)]
             
     def increment_pointer(self):
         """equivalent of >"""
-        if self.pointer > len(self.tape):
-            raise ValueError('Segmentation fault')
+        if not self.infinite_expansion:
+            if self.pointer > len(self.tape):
+                raise ValueError('Segmentation fault')
         self.pointer += 1
     
     def decrement_pointer(self):
@@ -78,15 +96,13 @@ class Parser:
         """equivalent of ."""
         sys.stdout.write(chr(self.tape[self.pointer]))
 
-    def stop_loop(self): pass
-
     def parse(self, code):
         """code is a string of .. code"""
         code = ''.join([i for i in code if i in self.commands])
         opening_brackets = []
         code_index = 0
         while code_index < len(code):
-            # TODO: check the validity of the input
+            # TODO: check the validity of the input (matched brackets)
             if code[code_index] == '[':
                 opening_brackets.append(code_index)
             elif code[code_index] == ']':
@@ -101,28 +117,5 @@ class Parser:
 
 if __name__ == '__main__':
     p = Parser()
-    p.parse("""
-        ++++++
-        >           THIS IS WHERE THE INDEX IS
-        +>+<<       INITIAL SETUP (depth;1; 1; 0)
-        [>>         OPEN MAIN LOOP
-        [->+<]      0; first; 0; second
-        <[->+<]     0; 0; first; second
-        >>[-<+<+>>] 0; second; third; 0
-        <<< -]
-    """)
-
-
-
-    # """"
-    #         ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    #         >           THIS IS WHERE THE INDEX IS
-    #         +>+<<       INITIAL SETUP (depth;1; 1; 0)
-    #         [>>         OPEN MAIN LOOP
-    #         [->+<]      0; first; 0; second
-    #         <[->+<]     0; 0; first; second
-    #         >>[-<+<+>>] 0; second; third; 0
-    #         <<< -]
-    #     """
-
-
+    with open('fib.b') as f:
+        p.parse(f.read())
