@@ -28,21 +28,26 @@ class ArgumentConflict(Exception):
 
 
 class Parser:
-    def __init__(self, pointer=0, tape=None, tape_infinite_expansion=False,
-                 tape_length=None, allow_other_chars=True):
+    def __init__(self, pointer=0, tape=None, tape_infinite_expansion=False, tape_length=None,
+                 allow_other_chars=True, cyclic_cell=False, tape_bit=8):
         """
         Main brainf parser
         :param pointer: initial pointer position on the tape
         :param tape: you can pass a custom tape (list with numbers >= 0)
         :param tape_infinite_expansion: if True, tape will will expand infinitely to the right 
         :param allow_other_chars: If false, will raise an error if it encounters other chars
+        :param cyclic_cell: If true, 255 + 1 -> 0 and 0 - 1 -> 255 (8-bit)
         """
         self.pointer = pointer
         self.infinite_expansion = tape_infinite_expansion
         if tape_length and tape_infinite_expansion:
             raise ArgumentConflict("Cannot specify tape length if infinite expansion is enabled")
+
         self.tape_length = tape_length if tape_length else 3*(10**4)
         self.allow_other_chars = allow_other_chars  # TODO: implement that
+        self.cyclic_cell = cyclic_cell
+        self.max_tape_value = 2 ** tape_bit - 1  # 0 counts as a number, so for 8-bit 256 numbers: [0; 255]
+
         self.commands = {
             '>': self.increment_pointer,
             '<': self.decrement_pointer,
@@ -50,8 +55,8 @@ class Parser:
             '-': self.decrement_value,
             ',': self.read_input,
             '.': self.write_output,
-            '[': None,  # we don't run
-            ']': None,  # any of these
+            '[': None,  # we don't run any of these, but they are  #
+            ']': None,  # required for checking character validity #
         }
 
         if tape:
@@ -74,17 +79,23 @@ class Parser:
     
     def increment_value(self):
         """equivalent of +"""
-        if self.tape[self.pointer] == 256:
-            raise ValueError('Cannot store values > 256')
+        if self.cyclic_cell:
+            self.tape[self.pointer] = 0
         else:
-            self.tape[self.pointer] += 1
+            if self.tape[self.pointer] == self.max_tape_value:
+                raise ValueError(f'Cannot store values > {self.max_tape_value}')
+            else:
+                self.tape[self.pointer] += 1
     
     def decrement_value(self):
         """equivalent of -"""
-        if self.tape[self.pointer] == 0:
-            raise ValueError('Cannot store negative values')
+        if self.cyclic_cell:
+            self.tape[self.pointer] = self.max_tape_value
         else:
-            self.tape[self.pointer] -= 1
+            if self.tape[self.pointer] == 0:
+                raise ValueError('Cannot store negative values')
+            else:
+                self.tape[self.pointer] -= 1
 
     def read_input(self):
         """equivalent of ,"""
@@ -96,8 +107,8 @@ class Parser:
         """equivalent of ."""
         sys.stdout.write(chr(self.tape[self.pointer]))
 
-    def parse(self, code):
-        """code is a string of .. code"""
+    def run(self, code):
+        """executes code"""
         code = ''.join([i for i in code if i in self.commands])
         opening_brackets = []
         code_index = 0
@@ -117,5 +128,5 @@ class Parser:
 
 if __name__ == '__main__':
     p = Parser()
-    with open('fib.b') as f:
-        p.parse(f.read())
+    with open('examples\hello_world.b') as f:
+        p.run(f.read())
