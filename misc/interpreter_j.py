@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Brainfuck Interpreter"""
+"""brainfuck Interpreter"""
 
 tape = [0] * 256
 index = 0
